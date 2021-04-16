@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.10.1",
+    "rickmortyapi": "^0.3.0",
     "sass-loader": "^11.0.1",
     "vue": "^3.0.0-beta.1",
     "vue-class-component": "^7.2.3",
