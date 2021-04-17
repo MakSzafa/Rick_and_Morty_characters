@@ -8,12 +8,14 @@
       <button :class="{ inactive: !areFavVisible, active: areFavVisible }"
               @click="showFav">Favorites
       </button>
-      <CharacterList v-if="!areFavVisible" :characterList="allCharacterList" :characterFav="false"
-                     @addToFavorites="addToFavorites"/>
-      <CharacterList v-if="areFavVisible" :characterList="favCharacterList" :characterFav="true"
+      <CharacterList v-if="!areFavVisible" :characterList="allCharacterList"
+                     @addToFavorites="addToFavorites"
+                     @removeFromFavorites="removeFromFavorites"/>
+      <CharacterList v-if="areFavVisible" :characterList="favCharacterList"
                      @removeFromFavorites="removeFromFavorites"/>
     </div>
-    <PageFooter/>
+    <PageFooter :pagesArray="pagesArray" :areFavVisible="areFavVisible"
+                :favListLength="favCharacterList.length" @goToPage="goToPage"/>
   </div>
 </template>
 
@@ -31,7 +33,8 @@ interface CharacterInterface {
   name: string
   gender: string
   species: string
-  episode: string[]
+  episode: string
+  isFav?: boolean
 }
 
 interface RickApiInterface {
@@ -44,7 +47,7 @@ interface RickApiInterface {
     name: string
     gender: string
     species: string
-    episode: string[]
+    episode: string
   }]
 }
 
@@ -56,19 +59,51 @@ export default defineComponent({
     CharacterList,
   },
   setup() {
-    let rickApiCollection = reactive({}) as RickApiInterface
+    let areFavVisible = ref(false)
     let pagesCount = ref(1)
+    let rickApiCollection = reactive({}) as RickApiInterface
     let result = reactive({}) as CharacterInterface
     let allCharacterList = reactive([{} as CharacterInterface])
     let favCharacterList = reactive([{} as CharacterInterface])
+    let page = ref(1)
+    let isActive = ref(true)
+    let pagesArray = reactive([{page, isActive}])
 
     allCharacterList.splice(0, 1)
     favCharacterList.splice(0, 1)
+    pagesArray.splice(0, 1)
 
     const getRickApiCollection = async (page: number) => {
       rickApiCollection = await rickApi.getCharacter({page: page})
       pagesCount.value = rickApiCollection.info.pages
+      for (let i = 0; i < pagesCount.value; i++) {
+        if(i === 0){
+          pagesArray[i].page = i + 1
+          pagesArray[i].isActive = true
+        } else {
+          pagesArray[i].page = i + 1
+          pagesArray[i].isActive = false
+        }
+      }
+      console.log(pagesArray)
       for (result of rickApiCollection.results) {
+        if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 10) {
+          result.episode = 's01e0' + result.episode[result.episode.length - 1].substring(40)
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 12) {
+          result.episode = 's01e' + result.episode[result.episode.length - 1].substring(40)
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 21) {
+          result.episode = 's02e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 22) {
+          result.episode = 's02e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 31) {
+          result.episode = 's03e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 32) {
+          result.episode = 's03e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 41) {
+          result.episode = 's04e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
+        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 42) {
+          result.episode = 's04e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
+        }
         allCharacterList.push({
           image: result.image,
           id: result.id,
@@ -76,8 +111,19 @@ export default defineComponent({
           gender: result.gender,
           species: result.species,
           episode: result.episode,
+          isFav: false,
         })
       }
+    }
+    const showAll = () => {
+      areFavVisible.value = false
+    }
+    const showFav = () => {
+      areFavVisible.value = true
+    }
+    const goToPage = (page: number) => {
+      allCharacterList.splice(0, 20)
+      getRickApiCollection(page)
     }
 
     onMounted(() => {
@@ -85,41 +131,37 @@ export default defineComponent({
     })
 
     return {
-      getRickApiCollection,
+      areFavVisible,
       pagesCount,
+      pagesArray,
       allCharacterList,
-      favCharacterList
-    }
-  },
-  data() {
-    return {
-      areFavVisible: false,
+      favCharacterList,
+      getRickApiCollection,
+      showAll,
+      showFav,
+      goToPage,
     }
   },
   methods: {
-    goToPage(page: number) {
-      this.allCharacterList.splice(0, 20)
-      this.getRickApiCollection(page)
-    },
+    // wygląda to na bug vue3, komponent się nie rerenderuje i trzeba to wymuszać,
+    // natomiast wewnątrz setup() nie można skorzystać z $forceUpdate
     addToFavorites(id: number) {
       for (let character of this.allCharacterList) {
         if (character.id === id) {
+          character.isFav = true
           this.favCharacterList.push(character)
         }
       }
-      console.log(id)
-      console.log(this.favCharacterList)
+      this.$forceUpdate()
     },
-    removeFromFavorites(id: number){
-      console.log(id)
-      this.favCharacterList.filter(element => element.id !== id)
-      console.log(this.favCharacterList)
-    },
-    showAll() {
-      this.areFavVisible = false
-    },
-    showFav() {
-      this.areFavVisible = true
+    removeFromFavorites(id: number) {
+      for (let character of this.allCharacterList) {
+        if (character.id === id) {
+          character.isFav = false
+        }
+      }
+      this.favCharacterList = this.favCharacterList.filter(element => element.id !== id)
+      this.$forceUpdate()
     },
   },
 });

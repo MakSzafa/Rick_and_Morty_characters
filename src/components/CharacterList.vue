@@ -10,17 +10,27 @@
       <h1>Add To Favorites</h1>
     </div>
     <div v-for="character in characterList" :key="character.id" class="character-rows">
-      <h2>{{character.id}}</h2>
+      <img :src="character.image" alt="img"/>
       <h2>{{character.id}}</h2>
       <h2>{{character.name}}</h2>
-      <h2>{{character.gender}}</h2>
+      <div class="gender">
+        <i v-if="character.gender === 'Male'" class="material-icons"
+           style="font-size: 20px; color: #9d9b9b; ">male</i>
+        <i v-if="character.gender === 'Female'" class="material-icons"
+           style="font-size: 20px; color: #9d9b9b; ">female</i>
+        <i v-if="character.gender === 'unknown'" class="material-icons"
+           style="font-size: 20px; color: #9d9b9b; ">remove</i>
+        <i v-if="character.gender === 'Genderless'" class="material-icons"
+           style="font-size: 20px; color: #9d9b9b; ">close</i>
+        <h3>{{character.gender}}</h3>
+      </div>
       <h2>{{character.species}}</h2>
-      <h2>{{character.species}}</h2>
-      <button v-if="!characterFav" @click="addToFavorites(character.id)" :id="`button-${character.id}`"
+      <h2>{{character.episode}}</h2>
+      <button v-if="!character.isFav" @click="addToFavorites(character.id)" :id="`button-${character.id}`"
               class="add-button">
         <i class="material-icons" style="font-size: 30px; padding-top: 3px; color: #08B2C9;"
            :id="`star-${character.id}`">star</i></button>
-      <button v-if="characterFav" @click="removeFromFavorites(character.id)" :id="`button-${character.id}`"
+      <button v-if="character.isFav" @click="removeFromFavorites(character.id)" :id="`button-${character.id}`"
               class="remove-button">
         <i class="material-icons" style="font-size: 30px; padding-top: 3px; color: white;"
            :id="`star-${character.id}`">star</i></button>
@@ -38,20 +48,12 @@ export default defineComponent({
       type: Array,
       required: false,
     },
-    characterFav: {
-      type: Boolean,
-      required: true,
-    }
   },
   methods:{
     addToFavorites(id: number){
-      document.getElementById(`button-${id}`)!.style.backgroundColor = "#08B2C9"
-      document.getElementById(`star-${id}`)!.style.color = "white"
       this.$emit('addToFavorites', id)
     },
     removeFromFavorites(id: number){
-      document.getElementById(`button-${id}`)!.style.backgroundColor = "white"
-      document.getElementById(`star-${id}`)!.style.color = "#08B2C9"
       this.$emit('removeFromFavorites', id)
     },
   },
@@ -83,6 +85,24 @@ h2{
   margin-bottom: auto;
   margin-left: 10px;
 }
+h3{
+  font-size: 14px;
+  font-weight: normal;
+  color: #9d9b9b;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 3px;
+}
+img{
+  width: 60px;
+  height: 60px;
+  margin: auto 10px;
+}
+.gender{
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px;
+}
 .add-button{
   width: 40px;
   height: 40px;
@@ -106,7 +126,7 @@ h2{
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
   border-bottom: solid 1px #9d9b9b;
-  height: 60px;
+  height: 80px;
 }
 
 </style>
