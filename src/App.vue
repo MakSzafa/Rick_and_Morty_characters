@@ -267,15 +267,29 @@ export default defineComponent({
     const showFav = () => {
       areFavVisible.value = true
     }
-    const goToPage = (page: number) => {
+    const goToPage = async (page: number) => {
       allCharacterList.splice(0, 20)
-      getRickApiCollection(page, searchInput.value)
+      await getRickApiCollection(page, searchInput.value)
+      for (let favCharacter of favCharacterList) {
+        for (let character of allCharacterList) {
+          if (character.id === favCharacter.id) {
+            character.isFav = true
+          }
+        }
+      }
     }
     const handleInputSearch = async (input: string) => {
       searchInput.value = input
       allCharacterList.splice(0, 20)
       pagesArray.splice(0, 34)
       await getRickApiCollection(1, input)
+      for (let favCharacter of favCharacterList) {
+        for (let character of allCharacterList) {
+          if (character.id === favCharacter.id) {
+            character.isFav = true
+          }
+        }
+      }
     }
     onMounted(() => {
       getRickApiCollection(1, '')
@@ -312,6 +326,7 @@ export default defineComponent({
           this.favCharacterList.push(character)
         }
       }
+      this.favCharacterList.sort((a, b) => (a.id > b.id) ? 1 : ((b.id > a.id) ? -1 : 0))
       this.$forceUpdate()
     },
     removeFromFavorites(id: number) {
