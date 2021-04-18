@@ -15,6 +15,9 @@
                      @removeFromFavorites="removeFromFavorites"/>
     </div>
     <PageFooter :pagesArray="pagesArray" :areFavVisible="areFavVisible"
+                :prev="prevPage" :isPrevActive="isPrevActive" :next="nextPage" :isNextActive="isNextActive"
+                :firstPage="firstPage" :lastPage="lastPage"
+                :startHidden="startHidden" :endHidden="endHidden"
                 :favListLength="favCharacterList.length" @goToPage="goToPage"/>
   </div>
 </template>
@@ -40,6 +43,8 @@ interface CharacterInterface {
 interface RickApiInterface {
   info: {
     pages: number
+    prev: string
+    next: string
   }
   results: [{
     image: string
@@ -59,15 +64,27 @@ export default defineComponent({
     CharacterList,
   },
   setup() {
-    let areFavVisible = ref(false)
-    let pagesCount = ref(1)
     let rickApiCollection = reactive({}) as RickApiInterface
     let result = reactive({}) as CharacterInterface
     let allCharacterList = reactive([{} as CharacterInterface])
     let favCharacterList = reactive([{} as CharacterInterface])
-    let page = ref(1)
+    let areFavVisible = ref(false)
+    let pagesCount = ref(1)
+    let prevPage = ref(1)
+    let isPrevActive = ref(false)
+    let nextPage = ref(1)
+    let isNextActive = ref(true)
+    let pageNumber = ref(1)
     let isActive = ref(true)
-    let pagesArray = reactive([{page, isActive}])
+    let pagesArray = reactive([{pageNumber, isActive}])
+    let firstPageNumber = ref(1)
+    let isFirstActive = ref(true)
+    let firstPage = reactive({firstPageNumber, isFirstActive})
+    let lastPageNumber = ref(1)
+    let isLastActive = ref(true)
+    let lastPage = reactive({lastPageNumber, isLastActive})
+    let startHidden = ref(false)
+    let endHidden = ref(true)
 
     allCharacterList.splice(0, 1)
     favCharacterList.splice(0, 1)
@@ -76,16 +93,106 @@ export default defineComponent({
     const getRickApiCollection = async (page: number) => {
       rickApiCollection = await rickApi.getCharacter({page: page})
       pagesCount.value = rickApiCollection.info.pages
-      for (let i = 0; i < pagesCount.value; i++) {
-        if(i === 0){
-          pagesArray[i].page = i + 1
-          pagesArray[i].isActive = true
-        } else {
-          pagesArray[i].page = i + 1
-          pagesArray[i].isActive = false
+
+      firstPage.firstPageNumber = 1
+      lastPage.lastPageNumber = pagesCount.value
+
+      if (pagesArray.length === 0) {
+        for (let i = 0; i < 4; i++) {
+          pagesArray.push({
+            pageNumber: i + 2,
+            isActive: false,
+          })
+        }
+        firstPage.isFirstActive = true
+        lastPage.isLastActive = false
+        startHidden.value = false
+        endHidden.value = true
+      } else if (page === 1) {
+        startHidden.value = false
+        endHidden.value = true
+        firstPage.isFirstActive = true
+        lastPage.isLastActive = false
+        pagesArray.splice(0, 4)
+        for (let i = 0; i < 4; i++) {
+          pagesArray.push({
+            pageNumber: i + 2,
+            isActive: false,
+          })
+        }
+      } else if (page < 4) {
+        startHidden.value = false
+        firstPage.isFirstActive = false
+        for (let i = 0; i < pagesArray.length; i++) {
+          if ((i + 2) === page) {
+            pagesArray[i].isActive = true
+          } else {
+            pagesArray[i].isActive = false
+          }
+        }
+      } else if (page < 30) {
+        startHidden.value = true
+        endHidden.value = true
+        firstPage.isFirstActive = false
+        lastPage.isLastActive = false
+        pagesArray.splice(0, 4)
+        pagesArray.push({
+          pageNumber: page,
+          isActive: true,
+        })
+        pagesArray.push({
+          pageNumber: page + 1,
+          isActive: false,
+        })
+        pagesArray.push({
+          pageNumber: page + 2,
+          isActive: false,
+        })
+      } else if (page < 34){
+        startHidden.value = true
+        endHidden.value = false
+        firstPage.isFirstActive = false
+        lastPage.isLastActive = false
+        pagesArray.splice(0, 4)
+        for (let i = 30; i < 34; i++) {
+          pagesArray.push({
+            pageNumber: i,
+            isActive: false,
+          })
+        }
+        for (let i = 0; i < pagesArray.length; i++) {
+          if ((i + 30) === page) {
+            pagesArray[i].isActive = true
+          } else {
+            pagesArray[i].isActive = false
+          }
+        }
+      } else if (page === 34){
+        startHidden.value = true
+        endHidden.value = false
+        firstPage.isFirstActive = false
+        lastPage.isLastActive = true
+        pagesArray.splice(0, 4)
+        for (let i = 0; i < 4; i++) {
+          pagesArray.push({
+            pageNumber: i + 30,
+            isActive: false,
+          })
         }
       }
-      console.log(pagesArray)
+
+      if (rickApiCollection.info.prev == null) {
+        isPrevActive.value = false
+      } else {
+        isPrevActive.value = true
+        prevPage.value = parseInt(rickApiCollection.info.prev.substring(48))
+      }
+      if (rickApiCollection.info.next == null) {
+        isNextActive.value = false
+      } else {
+        isNextActive.value = true
+        nextPage.value = parseInt(rickApiCollection.info.next.substring(48))
+      }
       for (result of rickApiCollection.results) {
         if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 10) {
           result.episode = 's01e0' + result.episode[result.episode.length - 1].substring(40)
@@ -115,6 +222,7 @@ export default defineComponent({
         })
       }
     }
+
     const showAll = () => {
       areFavVisible.value = false
     }
@@ -132,8 +240,15 @@ export default defineComponent({
 
     return {
       areFavVisible,
-      pagesCount,
       pagesArray,
+      firstPage,
+      lastPage,
+      prevPage,
+      nextPage,
+      isPrevActive,
+      isNextActive,
+      startHidden,
+      endHidden,
       allCharacterList,
       favCharacterList,
       getRickApiCollection,

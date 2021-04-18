@@ -1,14 +1,26 @@
 <template>
   <div class="PageFooter">
-    <button class="arrow-button">
-      <i class="material-icons" style="font-size: 30px;
+    <button @click="goToPage(prev)" :disabled="!isPrevActive" class="arrow-button">
+      <i class="material-icons" :class="{'isArrowActive' : isPrevActive}" style="font-size: 30px;
       padding-top: 3px; color: #9d9b9b;">arrow_left</i></button>
+    <button @click="goToPage(firstPage.firstPageNumber)" :disabled="firstPage.isFirstActive"
+            class="page-button" :class="{'isActive' : firstPage.isFirstActive}">
+      {{ firstPage.firstPageNumber }}
+    </button>
+    <button v-if="startHidden" class="page-button">...</button>
     <div v-for="(page, index) in pagesArray" :key="index" class="page-buttons">
-      <button @click="goToPage(page.page)" class="page-button" :class="{'isActive' : page.isActive}">
-        {{ page.page }}</button>
+      <button @click="goToPage(page.pageNumber)" :disabled="page.isActive"
+              class="page-button" :class="{'isActive' : page.isActive}">
+        {{ page.pageNumber }}
+      </button>
     </div>
-    <button class="arrow-button">
-      <i class="material-icons" style="font-size: 30px;
+    <button v-if="endHidden" class="page-button">...</button>
+    <button @click="goToPage(lastPage.lastPageNumber)" :disabled="lastPage.isLastActive"
+            class="page-button" :class="{'isActive' : lastPage.isLastActive}">
+      {{ lastPage.lastPageNumber }}
+    </button>
+    <button @click="goToPage(next)" :disabled="!isNextActive" class="arrow-button">
+      <i class="material-icons" :class="{'isArrowActive' : isNextActive}" style="font-size: 30px;
       padding-top: 3px; color: #9d9b9b;">arrow_right</i></button>
 
   </div>
@@ -22,8 +34,16 @@ export default defineComponent({
   props: {
     pagesArray: {
       type: Array,
-      required: false,
+      required: true,
     },
+    prev: Number,
+    next: Number,
+    isPrevActive: Boolean,
+    isNextActive: Boolean,
+    firstPage: Object,
+    lastPage: Object,
+    startHidden: Boolean,
+    endHidden: Boolean,
     areFavVisible: {
       type: Boolean,
       required: true,
@@ -44,6 +64,8 @@ export default defineComponent({
 <style scoped>
 .PageFooter {
   padding: 0 50px;
+  display: flex;
+  margin-bottom: 30px;
 }
 
 .arrow-button {
@@ -66,12 +88,15 @@ export default defineComponent({
   padding: 0;
   color: #9d9b9b;
 }
-.isActive{
+
+.isActive {
   background-color: #08B2C9;
   color: white;
   border-color: #08B2C9;
 }
-.page-buttons {
-  display: inline-block;
+
+.isArrowActive {
+  color: #08B2C9 !important;
 }
+
 </style>
