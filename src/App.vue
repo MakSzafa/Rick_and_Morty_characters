@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="MainPage">
-    <PageHeader/>
+    <PageHeader @search="handleInputSearch"/>
     <div class="content">
       <button :class="{ inactive: areFavVisible, active: !areFavVisible }"
               @click="showAll">All Characters
@@ -16,7 +16,7 @@
     </div>
     <PageFooter :pagesArray="pagesArray" :areFavVisible="areFavVisible"
                 :prev="prevPage" :isPrevActive="isPrevActive" :next="nextPage" :isNextActive="isNextActive"
-                :firstPage="firstPage" :lastPage="lastPage"
+                :firstPage="firstPage" :lastPage="lastPage" :isLastPage="isLastPage"
                 :startHidden="startHidden" :endHidden="endHidden"
                 :favListLength="favCharacterList.length" @goToPage="goToPage"/>
   </div>
@@ -82,144 +82,182 @@ export default defineComponent({
     let firstPage = reactive({firstPageNumber, isFirstActive})
     let lastPageNumber = ref(1)
     let isLastActive = ref(true)
+    let isLastPage = ref(true)
     let lastPage = reactive({lastPageNumber, isLastActive})
     let startHidden = ref(false)
     let endHidden = ref(true)
+    let searchInput = ref('')
 
     allCharacterList.splice(0, 1)
     favCharacterList.splice(0, 1)
     pagesArray.splice(0, 1)
 
-    const getRickApiCollection = async (page: number) => {
-      rickApiCollection = await rickApi.getCharacter({page: page})
-      pagesCount.value = rickApiCollection.info.pages
+    const getRickApiCollection = async (page: number, input: string) => {
+      try {
+        rickApiCollection = await rickApi.getCharacter({page: page, name: input})
+        pagesCount.value = rickApiCollection.info.pages
 
-      firstPage.firstPageNumber = 1
-      lastPage.lastPageNumber = pagesCount.value
+        firstPage.firstPageNumber = 1
+        lastPage.lastPageNumber = pagesCount.value
 
-      if (pagesArray.length === 0) {
-        for (let i = 0; i < 4; i++) {
+        if (pagesArray.length === 0) {
+          if (pagesCount.value === 1) {
+            isLastPage.value = false
+            firstPage.isFirstActive = true
+            startHidden.value = false
+            endHidden.value = false
+
+          } else if (pagesCount.value < 8) {
+            for (let i = 0; i < pagesCount.value - 2; i++) {
+              pagesArray.push({
+                pageNumber: i + 2,
+                isActive: false,
+              })
+            }
+            firstPage.isFirstActive = true
+            lastPage.isLastActive = false
+            startHidden.value = false
+            endHidden.value = false
+          } else if (pagesCount.value > 7) {
+            for (let i = 0; i < 4; i++) {
+              pagesArray.push({
+                pageNumber: i + 2,
+                isActive: false,
+              })
+            }
+            firstPage.isFirstActive = true
+            lastPage.isLastActive = false
+            startHidden.value = false
+            endHidden.value = true
+          }
+        } else if (pagesCount.value < 8 && page === 1) {
+          firstPage.isFirstActive = true
+          lastPage.isLastActive = false
+          for (let i = 0; i < pagesArray.length; i++) {
+            pagesArray[i].isActive = (i + 2) === page;
+          }
+        } else if (pagesCount.value < 8 && page === pagesCount.value) {
+          firstPage.isFirstActive = false
+          lastPage.isLastActive = true
+          for (let i = 0; i < pagesArray.length; i++) {
+            pagesArray[i].isActive = (i + 2) === page;
+          }
+        } else if (pagesCount.value < 8 && page !== 1 && page !== pagesCount.value) {
+          firstPage.isFirstActive = false
+          lastPage.isLastActive = false
+          for (let i = 0; i < pagesArray.length; i++) {
+            pagesArray[i].isActive = (i + 2) === page;
+          }
+        } else if (page === 1) {
+          startHidden.value = false
+          endHidden.value = true
+          firstPage.isFirstActive = true
+          lastPage.isLastActive = false
+          pagesArray.splice(0, 4)
+          for (let i = 0; i < 4; i++) {
+            pagesArray.push({
+              pageNumber: i + 2,
+              isActive: false,
+            })
+          }
+        } else if (page < 4) {
+          startHidden.value = false
+          firstPage.isFirstActive = false
+          for (let i = 0; i < pagesArray.length; i++) {
+            pagesArray[i].isActive = (i + 2) === page;
+          }
+        } else if (page < pagesCount.value - 4) {
+          startHidden.value = true
+          endHidden.value = true
+          firstPage.isFirstActive = false
+          lastPage.isLastActive = false
+          pagesArray.splice(0, 4)
           pagesArray.push({
-            pageNumber: i + 2,
+            pageNumber: page,
+            isActive: true,
+          })
+          pagesArray.push({
+            pageNumber: page + 1,
             isActive: false,
           })
-        }
-        firstPage.isFirstActive = true
-        lastPage.isLastActive = false
-        startHidden.value = false
-        endHidden.value = true
-      } else if (page === 1) {
-        startHidden.value = false
-        endHidden.value = true
-        firstPage.isFirstActive = true
-        lastPage.isLastActive = false
-        pagesArray.splice(0, 4)
-        for (let i = 0; i < 4; i++) {
           pagesArray.push({
-            pageNumber: i + 2,
+            pageNumber: page + 2,
             isActive: false,
           })
-        }
-      } else if (page < 4) {
-        startHidden.value = false
-        firstPage.isFirstActive = false
-        for (let i = 0; i < pagesArray.length; i++) {
-          if ((i + 2) === page) {
-            pagesArray[i].isActive = true
-          } else {
-            pagesArray[i].isActive = false
+        } else if (page < pagesCount.value) {
+          startHidden.value = true
+          endHidden.value = false
+          firstPage.isFirstActive = false
+          lastPage.isLastActive = false
+          pagesArray.splice(0, 4)
+          for (let i = pagesCount.value - 4; i < pagesCount.value; i++) {
+            pagesArray.push({
+              pageNumber: i,
+              isActive: false,
+            })
+          }
+          for (let i = 0; i < pagesArray.length; i++) {
+            pagesArray[i].isActive = (i + pagesCount.value - 4) === page;
+          }
+        } else if (page === pagesCount.value) {
+          startHidden.value = true
+          endHidden.value = false
+          firstPage.isFirstActive = false
+          lastPage.isLastActive = true
+          pagesArray.splice(0, 4)
+          for (let i = 0; i < 4; i++) {
+            pagesArray.push({
+              pageNumber: i + pagesCount.value - 4,
+              isActive: false,
+            })
           }
         }
-      } else if (page < 30) {
-        startHidden.value = true
-        endHidden.value = true
-        firstPage.isFirstActive = false
-        lastPage.isLastActive = false
-        pagesArray.splice(0, 4)
-        pagesArray.push({
-          pageNumber: page,
-          isActive: true,
-        })
-        pagesArray.push({
-          pageNumber: page + 1,
-          isActive: false,
-        })
-        pagesArray.push({
-          pageNumber: page + 2,
-          isActive: false,
-        })
-      } else if (page < 34){
-        startHidden.value = true
-        endHidden.value = false
-        firstPage.isFirstActive = false
-        lastPage.isLastActive = false
-        pagesArray.splice(0, 4)
-        for (let i = 30; i < 34; i++) {
-          pagesArray.push({
-            pageNumber: i,
-            isActive: false,
-          })
-        }
-        for (let i = 0; i < pagesArray.length; i++) {
-          if ((i + 30) === page) {
-            pagesArray[i].isActive = true
-          } else {
-            pagesArray[i].isActive = false
-          }
-        }
-      } else if (page === 34){
-        startHidden.value = true
-        endHidden.value = false
-        firstPage.isFirstActive = false
-        lastPage.isLastActive = true
-        pagesArray.splice(0, 4)
-        for (let i = 0; i < 4; i++) {
-          pagesArray.push({
-            pageNumber: i + 30,
-            isActive: false,
-          })
-        }
-      }
 
-      if (rickApiCollection.info.prev == null) {
-        isPrevActive.value = false
-      } else {
-        isPrevActive.value = true
-        prevPage.value = parseInt(rickApiCollection.info.prev.substring(48))
-      }
-      if (rickApiCollection.info.next == null) {
+        if (rickApiCollection.info.prev == null) {
+          isPrevActive.value = false
+        } else {
+          isPrevActive.value = true
+          prevPage.value = parseInt(rickApiCollection.info.prev.substring(48))
+        }
+        if (rickApiCollection.info.next == null) {
+          isNextActive.value = false
+        } else {
+          isNextActive.value = true
+          nextPage.value = parseInt(rickApiCollection.info.next.substring(48))
+        }
+        for (result of rickApiCollection.results) {
+          if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 10) {
+            result.episode = 's01e0' + result.episode[result.episode.length - 1].substring(40)
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 12) {
+            result.episode = 's01e' + result.episode[result.episode.length - 1].substring(40)
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 21) {
+            result.episode = 's02e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 22) {
+            result.episode = 's02e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 31) {
+            result.episode = 's03e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 32) {
+            result.episode = 's03e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 41) {
+            result.episode = 's04e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
+          } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 42) {
+            result.episode = 's04e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
+          }
+          allCharacterList.push({
+            image: result.image,
+            id: result.id,
+            name: result.name,
+            gender: result.gender,
+            species: result.species,
+            episode: result.episode,
+            isFav: false,
+          })
+        }
+      } catch (e) {
+        startHidden.value = false
+        endHidden.value = false
+        isLastPage.value = false
         isNextActive.value = false
-      } else {
-        isNextActive.value = true
-        nextPage.value = parseInt(rickApiCollection.info.next.substring(48))
-      }
-      for (result of rickApiCollection.results) {
-        if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 10) {
-          result.episode = 's01e0' + result.episode[result.episode.length - 1].substring(40)
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 12) {
-          result.episode = 's01e' + result.episode[result.episode.length - 1].substring(40)
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 21) {
-          result.episode = 's02e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 22) {
-          result.episode = 's02e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 11).toString()
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 31) {
-          result.episode = 's03e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 32) {
-          result.episode = 's03e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 21).toString()
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 41) {
-          result.episode = 's04e0' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
-        } else if (parseInt(result.episode[result.episode.length - 1].substring(40)) < 42) {
-          result.episode = 's04e' + (parseInt(result.episode[result.episode.length - 1].substring(40)) - 31).toString()
-        }
-        allCharacterList.push({
-          image: result.image,
-          id: result.id,
-          name: result.name,
-          gender: result.gender,
-          species: result.species,
-          episode: result.episode,
-          isFav: false,
-        })
       }
     }
 
@@ -231,11 +269,16 @@ export default defineComponent({
     }
     const goToPage = (page: number) => {
       allCharacterList.splice(0, 20)
-      getRickApiCollection(page)
+      getRickApiCollection(page, searchInput.value)
     }
-
+    const handleInputSearch = async (input: string) => {
+      searchInput.value = input
+      allCharacterList.splice(0, 20)
+      pagesArray.splice(0, 34)
+      await getRickApiCollection(1, input)
+    }
     onMounted(() => {
-      getRickApiCollection(1)
+      getRickApiCollection(1, '')
     })
 
     return {
@@ -249,12 +292,14 @@ export default defineComponent({
       isNextActive,
       startHidden,
       endHidden,
+      isLastPage,
       allCharacterList,
       favCharacterList,
       getRickApiCollection,
       showAll,
       showFav,
       goToPage,
+      handleInputSearch,
     }
   },
   methods: {

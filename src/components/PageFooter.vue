@@ -15,7 +15,7 @@
       </button>
     </div>
     <button v-if="endHidden" class="page-button">...</button>
-    <button @click="goToPage(lastPage.lastPageNumber)" :disabled="lastPage.isLastActive"
+    <button v-if="isLastPage" @click="goToPage(lastPage.lastPageNumber)" :disabled="lastPage.isLastActive"
             class="page-button" :class="{'isActive' : lastPage.isLastActive}">
       {{ lastPage.lastPageNumber }}
     </button>
@@ -44,6 +44,7 @@ export default defineComponent({
     lastPage: Object,
     startHidden: Boolean,
     endHidden: Boolean,
+    isLastPage: Boolean,
     areFavVisible: {
       type: Boolean,
       required: true,

@@ -1,21 +1,17 @@
 <template>
   <div class="CharacterSearch">
-    <input :isLoading="isLoading"
-           placeholder="Start typing to search..."
+    <input placeholder="Start typing to search..."
            type="text"
+           @input="inputChanged"
     />
-    <div>
-      <div :class="{ disabled: !isLoading, visible: isLoading }"
-           class="loader">
-      </div>
-      <i class="material-icons" :class="{ disabled: isLoading, visible: !isLoading }"
-         style="font-size: 30px; color: #08B2C9; padding-right: 10px;">search</i>
-    </div>
+    <i class="material-icons" style="font-size: 30px; color: #08B2C9; padding-right: 10px;">search</i>
   </div>
 </template>
 
 <script lang="ts">
 import {defineComponent} from 'vue';
+
+const DEBOUNCE_TIMEOUT: number = 200
 
 export default defineComponent({
   name: 'CharacterSearch',
@@ -25,6 +21,25 @@ export default defineComponent({
       default: false,
     },
   },
+  data() {
+    return {
+      debounceTimeout: 0,
+    }
+  },
+  methods: {
+    inputChanged(event: Event) {
+      const target = event.target as HTMLInputElement
+
+      if (this.debounceTimeout) {
+        clearTimeout(this.debounceTimeout)
+      }
+
+      this.debounceTimeout = setTimeout(
+          () => this.$emit('search', target.value),
+          DEBOUNCE_TIMEOUT
+      )
+    },
+  }
 });
 </script>
 
@@ -50,11 +65,4 @@ input {
   outline: none;
 }
 
-.visible {
-  display: block;
-}
-
-.disabled {
-  display: none;
-}
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="PageHeader">
     <img alt="Rick and Morty logo" src="../assets/logo.png">
-    <CharacterSearch/>
+    <CharacterSearch @search="inputSearch"/>
   </div>
 </template>
 
@@ -14,6 +14,11 @@ export default defineComponent({
   components: {
     CharacterSearch,
   },
+  methods: {
+    inputSearch(input: string) {
+      this.$emit('search', input)
+    }
+  }
 });
 </script>
 
