@@ -8,13 +8,13 @@
       <button :class="{ inactive: !areFavVisible, active: areFavVisible }"
               @click="showFav">Favorites
       </button>
-      <CharacterList v-if="!areFavVisible" :characterList="allCharacterList"
-                     @addToFavorites="addToFavorites"
+      <CharacterList v-if="!areFavVisible" :areSearchResults="areSearchResults" :characterList="allCharacterList"
+                     :isFavListEmpty="false" @addToFavorites="addToFavorites"
                      @removeFromFavorites="removeFromFavorites"/>
-      <CharacterList v-if="areFavVisible" :characterList="favCharacterList"
-                     @removeFromFavorites="removeFromFavorites"/>
+      <CharacterList v-if="areFavVisible" :areSearchResults="true" :isFavListEmpty="isFavListEmpty"
+                     :characterList="favCharacterList" @removeFromFavorites="removeFromFavorites"/>
     </div>
-    <PageFooter :pagesArray="pagesArray" :areFavVisible="areFavVisible"
+    <PageFooter v-if="!areFavVisible" :pagesArray="pagesArray" :areFavVisible="areFavVisible"
                 :prev="prevPage" :isPrevActive="isPrevActive" :next="nextPage" :isNextActive="isNextActive"
                 :firstPage="firstPage" :lastPage="lastPage" :isLastPage="isLastPage"
                 :startHidden="startHidden" :endHidden="endHidden"
@@ -87,6 +87,8 @@ export default defineComponent({
     let startHidden = ref(false)
     let endHidden = ref(true)
     let searchInput = ref('')
+    let areSearchResults = ref(true)
+    let isFavListEmpty = ref(true)
 
     allCharacterList.splice(0, 1)
     favCharacterList.splice(0, 1)
@@ -99,6 +101,7 @@ export default defineComponent({
 
         firstPage.firstPageNumber = 1
         lastPage.lastPageNumber = pagesCount.value
+        areSearchResults.value = true
 
         if (pagesArray.length === 0) {
           if (pagesCount.value === 1) {
@@ -114,6 +117,7 @@ export default defineComponent({
                 isActive: false,
               })
             }
+            isLastPage.value = true
             firstPage.isFirstActive = true
             lastPage.isLastActive = false
             startHidden.value = false
@@ -125,6 +129,7 @@ export default defineComponent({
                 isActive: false,
               })
             }
+            isLastPage.value = true
             firstPage.isFirstActive = true
             lastPage.isLastActive = false
             startHidden.value = false
@@ -257,15 +262,19 @@ export default defineComponent({
         startHidden.value = false
         endHidden.value = false
         isLastPage.value = false
+        isPrevActive.value = false
         isNextActive.value = false
+        areSearchResults.value = false
       }
     }
 
     const showAll = () => {
       areFavVisible.value = false
+      isFavListEmpty.value = false
     }
     const showFav = () => {
       areFavVisible.value = true
+      isFavListEmpty.value = favCharacterList.length === 0;
     }
     const goToPage = async (page: number) => {
       allCharacterList.splice(0, 20)
@@ -309,6 +318,8 @@ export default defineComponent({
       isLastPage,
       allCharacterList,
       favCharacterList,
+      areSearchResults,
+      isFavListEmpty,
       getRickApiCollection,
       showAll,
       showFav,
