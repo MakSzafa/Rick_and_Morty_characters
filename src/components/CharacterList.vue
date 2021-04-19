@@ -1,10 +1,10 @@
 <template>
   <div class="CharacterList">
     <div v-if="!areSearchResults">
-      <h4>Brak wyników wyszukiwania</h4>
+      <h4>No results were found for your search</h4>
     </div>
     <div v-if="isFavListEmpty">
-      <h4>Lista ulubionych postaci jest pusta. Dodaj postacie, aby je tu zobaczyć.</h4>
+      <h4>Favorite characters list is empty. Add from "All Characters" to see them here.</h4>
     </div>
     <div v-if="areSearchResults && !isFavListEmpty" class="header">
       <h1>Photo</h1>
